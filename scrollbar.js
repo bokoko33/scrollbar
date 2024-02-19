@@ -160,6 +160,9 @@ export class MyScrollbar {
       this.resize();
     }
 
+    this.prevScrollSize = document.body[this.bodyScrollSizeProp];
+    this.prevWindowSize = window[this.windowInnerSizeProp];
+
     if (!this.isExist) return;
 
     const currentScroll = this.isVertical ? window.scrollY : window.scrollX;
@@ -190,9 +193,6 @@ export class MyScrollbar {
     }
 
     this.prevTranslate = translate;
-
-    this.prevScrollSize = document.body[this.bodyScrollSizeProp];
-    this.prevWindowSize = window[this.windowInnerSizeProp];
   };
 
   resize = () => {
