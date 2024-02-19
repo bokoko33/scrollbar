@@ -6,7 +6,6 @@ import './style.css';
 const scrollbar = new MyScrollbar({
   container: document.querySelector('[data-scrollbar="container"]'),
   thumb: document.querySelector('[data-scrollbar="thumb"]'),
-  autoFade: false,
 });
 
 const raf = () => {
@@ -15,5 +14,3 @@ const raf = () => {
 };
 
 raf();
-
-window.addEventListener('resize', scrollbar.resize);

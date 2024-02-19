@@ -20,16 +20,25 @@ export class MyScrollbar {
     this.containerEl = container;
     this.thumbEl = thumb;
 
+    this.thumbLength = 0;
+    this.thumbMinLength = 40; // 画面が小さいときにスクロールバーが小さくなりすぎて消えるのを防ぐ
+    this.maxScroll = 0;
+
     this.isHover = false;
     this.isHandling = false;
     this.isMoving = false;
-    this.prevTranslate = 0;
-    this.fadeTimeoutId = 0;
     this.isExist = false;
 
-    this.thumbRatio = 0;
-    this.thumbLength = 0;
-    this.maxScroll = 0;
+    // directionによって使い分ける頻出のプロパティを保持しておく
+    this.windowInnerSizeProp = this.isVertical ? 'innerHeight' : 'innerWidth';
+    this.bodyScrollSizeProp = this.isVertical ? 'scrollHeight' : 'scrollWidth';
+
+    this.prevTranslate = 0;
+    this.prevWindowSize = 0;
+    this.prevScrollSize = 0;
+
+    this.fadeTimeoutId = 0;
+
     this.setSize();
 
     this.containerEl.addEventListener('mouseenter', this.handleMouseEnter);
@@ -42,8 +51,7 @@ export class MyScrollbar {
     return map(
       target,
       0 + this.thumbLength * 0.5,
-      (this.isVertical ? window.innerHeight : window.innerWidth) -
-        this.thumbLength * 0.5,
+      window[this.windowInnerSizeProp] - this.thumbLength * 0.5,
       0,
       this.maxScroll
     );
@@ -55,8 +63,7 @@ export class MyScrollbar {
       0,
       this.maxScroll,
       0,
-      (this.isVertical ? window.innerHeight : window.innerWidth) *
-        (1.0 - this.thumbRatio)
+      window[this.windowInnerSizeProp] - this.thumbLength
     );
   };
 
@@ -118,42 +125,42 @@ export class MyScrollbar {
   };
 
   setSize = () => {
-    const thumbRatio = this.isVertical
-      ? window.innerHeight / document.body.scrollHeight
-      : window.innerWidth / document.body.scrollWidth;
+    const thumbRatio =
+      window[this.windowInnerSizeProp] / document.body[this.bodyScrollSizeProp];
 
     // スクロールできる高さがない場合は非表示に
     this.isExist = thumbRatio < 1;
+    if (this.isExist) {
+      this.containerEl.style.display = '';
+    } else {
+      this.containerEl.style.display = 'none';
+    }
 
-    this.thumbRatio = thumbRatio;
+    this.thumbLength = Math.max(
+      thumbRatio * window[this.windowInnerSizeProp],
+      this.thumbMinLength
+    );
 
-    this.thumbLength = this.isVertical
-      ? thumbRatio * window.innerHeight
-      : thumbRatio * window.innerWidth;
-
-    this.maxScroll = this.isVertical
-      ? document.body.scrollHeight - window.innerHeight
-      : document.body.scrollWidth - window.innerWidth;
+    this.maxScroll =
+      document.body[this.bodyScrollSizeProp] - window[this.windowInnerSizeProp];
 
     if (this.isVertical) {
-      this.thumbEl.style.height = `${thumbRatio * 100}%`;
+      this.thumbEl.style.height = `${this.thumbLength}px`;
     } else {
-      this.thumbEl.style.width = `${thumbRatio * 100}%`;
+      this.thumbEl.style.width = `${this.thumbLength}px`;
     }
   };
 
   raf = () => {
-    if (this.isExist) {
-      if (this.containerEl.style.display === 'none') {
-        this.containerEl.style.display === '';
-      }
-    } else {
-      if (this.containerEl.style.display !== 'none') {
-        this.containerEl.style.display = 'none';
-      }
-
-      return;
+    // 長さを変更する必要があるか確認
+    if (
+      window[this.windowInnerSizeProp] !== this.prevWindowSize ||
+      document.body[this.bodyScrollSizeProp] !== this.prevScrollSize
+    ) {
+      this.resize();
     }
+
+    if (!this.isExist) return;
 
     const currentScroll = this.isVertical ? window.scrollY : window.scrollX;
 
@@ -183,6 +190,9 @@ export class MyScrollbar {
     }
 
     this.prevTranslate = translate;
+
+    this.prevScrollSize = document.body[this.bodyScrollSizeProp];
+    this.prevWindowSize = window[this.windowInnerSizeProp];
   };
 
   resize = () => {
